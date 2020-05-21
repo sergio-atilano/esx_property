@@ -252,14 +252,22 @@ AddEventHandler('esx_property:getItem', function(owner, type, item, count)
 	elseif type == 'item_weapon' then
 		TriggerEvent('esx_datastore:getDataStore', 'property', xPlayerOwner.identifier, function(store)
 			local storeWeapons = store.get('weapons') or {}
-			local weapon = storeWeapons[data.current.count] -- count is the index
+			--local weapon = storeWeapons[data.current.count] -- count is the index
+			local weapon = storeWeapons[count] -- count is the index
 
 			if weapon then
 				if not xPlayer.hasWeapon(weaponName) then
-					table.remove(storeWeapons, data.current.count)
+					--table.remove(storeWeapons, data.current.count)
+					table.remove(storeWeapons, count, components)
 					store.set('weapons', storeWeapons)
 
 					xPlayer.addWeapon(weapon.name, weapon.ammo)
+					xPlayer.setWeaponTint(weapon.name, weapon.tintIndex)
+					
+					for k,v in ipairs(weapon.components) do
+						xPlayer.addWeaponComponent(weapon.name, v)
+						print(weapon.name, v)
+					end
 				end
 			end
 		end)
@@ -295,14 +303,21 @@ AddEventHandler('esx_property:putItem', function(owner, type, item, count)
 		end
 	elseif type == 'item_weapon' then
 		if xPlayer.hasWeapon(item) then
+			local _, weapon = xPlayer.getWeapon(item)
+			local _, weaponObject = ESX.GetWeapon(item)
+			local components = ESX.Table.Clone(weapon.components)
 			xPlayer.removeWeapon(item)
+			if not weapon.components then weapon.components = {} end
+			if not weapon.tintIndex then weapon.tintIndex = 0 end
 
 			TriggerEvent('esx_datastore:getDataStore', 'property', xPlayerOwner.identifier, function(store)
 				local storeWeapons = store.get('weapons') or {}
 
 				table.insert(storeWeapons, {
 					name = item,
-					ammo = count
+					ammo = count,
+					components = weapon.components,
+					tintIndex = weapon.tintIndex
 				})
 
 				store.set('weapons', storeWeapons)
